@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/lucide-react/lucide/main/icons/layers.svg" width="80" alt="AirSlate Logo" />
+  <img src="./assets/logo.png" width="150" alt="AirSlate Logo" />
 </p>
 
 <h1 align="center">AirSlate</h1>
