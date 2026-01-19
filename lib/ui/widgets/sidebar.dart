@@ -9,8 +9,9 @@ import 'glass_container.dart';
 /// 
 /// Displays navigation items for Inbox, Today, and Notes sections.
 /// Highlights the currently active section and handles navigation.
+/// Includes smooth animations for state transitions.
 /// 
-/// Requirements: 2.1, 3.1, 3.2, 3.3, 3.4, 3.5
+/// Requirements: 2.1, 3.1, 3.2, 3.3, 3.4, 3.5, 7.3, 7.5
 class Sidebar extends ConsumerWidget {
   const Sidebar({super.key});
 
@@ -60,7 +61,7 @@ class Sidebar extends ConsumerWidget {
   }
 }
 
-/// Individual navigation item widget
+/// Individual navigation item widget with smooth animations
 class _NavigationItem extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -80,7 +81,11 @@ class _NavigationItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(
+          milliseconds: AppDimensions.animationDurationMedium,
+        ),
+        curve: Curves.easeInOutCubic,
         margin: const EdgeInsets.symmetric(
           horizontal: AppDimensions.spacingMedium,
           vertical: AppDimensions.spacingXSmall,
@@ -97,16 +102,31 @@ class _NavigationItem extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(
-              icon,
-              size: AppDimensions.iconSize,
-              color: isActive
-                  ? AppColors.primary
-                  : CupertinoColors.secondaryLabel,
+            AnimatedDefaultTextStyle(
+              duration: const Duration(
+                milliseconds: AppDimensions.animationDurationMedium,
+              ),
+              curve: Curves.easeInOutCubic,
+              style: TextStyle(
+                fontSize: AppDimensions.iconSize,
+                color: isActive
+                    ? AppColors.primary
+                    : CupertinoColors.secondaryLabel,
+              ),
+              child: Icon(
+                icon,
+                size: AppDimensions.iconSize,
+                color: isActive
+                    ? AppColors.primary
+                    : CupertinoColors.secondaryLabel,
+              ),
             ),
             const SizedBox(width: AppDimensions.spacingMedium),
-            Text(
-              label,
+            AnimatedDefaultTextStyle(
+              duration: const Duration(
+                milliseconds: AppDimensions.animationDurationMedium,
+              ),
+              curve: Curves.easeInOutCubic,
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
@@ -114,6 +134,7 @@ class _NavigationItem extends StatelessWidget {
                     ? AppColors.textPrimary
                     : AppColors.textSecondary,
               ),
+              child: Text(label),
             ),
           ],
         ),

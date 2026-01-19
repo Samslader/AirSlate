@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/navigation_provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_dimensions.dart';
 import '../widgets/title_bar.dart';
 import '../widgets/sidebar.dart';
 import 'inbox_screen.dart';
@@ -13,9 +14,9 @@ import 'notes_screen.dart';
 /// Layout:
 /// - TitleBar at the top
 /// - Row layout with Sidebar (250px) and Content_Area (flexible)
-/// - Content switches based on navigationProvider
+/// - Content switches based on navigationProvider with animated transitions
 /// 
-/// Requirements: 2.6, 3.3
+/// Requirements: 2.6, 3.3, 7.3, 7.5
 class MainScreen extends ConsumerWidget {
   const MainScreen({super.key});
 
@@ -36,11 +37,31 @@ class MainScreen extends ConsumerWidget {
                 // Sidebar with fixed width
                 const Sidebar(),
                 
-                // Content area with flexible width
+                // Content area with flexible width and animated transitions
                 Expanded(
                   child: Container(
                     color: AppColors.backgroundLight,
-                    child: _buildContent(currentSection),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(
+                        milliseconds: AppDimensions.animationDurationMedium,
+                      ),
+                      switchInCurve: Curves.easeInOutCubic,
+                      switchOutCurve: Curves.easeInOutCubic,
+                      transitionBuilder: (Widget child, Animation<double> animation) {
+                        // Combine fade and scale animations for smooth transitions
+                        return FadeTransition(
+                          opacity: animation,
+                          child: ScaleTransition(
+                            scale: Tween<double>(
+                              begin: 0.95,
+                              end: 1.0,
+                            ).animate(animation),
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: _buildContent(currentSection),
+                    ),
                   ),
                 ),
               ],
@@ -52,14 +73,15 @@ class MainScreen extends ConsumerWidget {
   }
 
   /// Build the content based on the current navigation section
+  /// Each widget has a unique key to trigger AnimatedSwitcher transitions
   Widget _buildContent(NavigationSection section) {
     switch (section) {
       case NavigationSection.inbox:
-        return const InboxScreen();
+        return const InboxScreen(key: ValueKey('inbox'));
       case NavigationSection.today:
-        return const TodayScreen();
+        return const TodayScreen(key: ValueKey('today'));
       case NavigationSection.notes:
-        return const NotesScreen();
+        return const NotesScreen(key: ValueKey('notes'));
     }
   }
 }

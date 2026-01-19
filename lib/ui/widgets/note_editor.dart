@@ -10,9 +10,10 @@ import '../../core/constants/app_colors.dart';
 /// A full-screen note editor with auto-save functionality
 /// 
 /// Provides a multi-line text field for editing note content with
-/// debounced auto-save (500ms delay) and a back button to return to the list.
+/// debounced auto-save (500ms delay), a back button to return to the list,
+/// and a delete button with confirmation dialog.
 /// 
-/// Requirements: 5.2, 5.3, 5.4
+/// Requirements: 5.2, 5.3, 5.4, 6.3
 class NoteEditor extends ConsumerStatefulWidget {
   /// The note being edited
   final Note note;
@@ -71,16 +72,22 @@ class _NoteEditorState extends ConsumerState<NoteEditor> {
   Future<void> _saveNote() async {
     if (!_hasUnsavedChanges) return;
     
-    final repository = ref.read(noteRepositoryProvider);
-    final updatedNote = widget.note;
-    updatedNote.content = _controller.text;
-    
-    await repository.updateNote(updatedNote);
-    
-    if (mounted) {
-      setState(() {
-        _hasUnsavedChanges = false;
-      });
+    try {
+      final repository = ref.read(noteRepositoryProvider);
+      final updatedNote = widget.note;
+      updatedNote.content = _controller.text;
+      
+      await repository.updateNote(updatedNote);
+      
+      if (mounted) {
+        setState(() {
+          _hasUnsavedChanges = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorDialog('Failed to save note. Please try again.');
+      }
     }
   }
 
@@ -95,6 +102,61 @@ class _NoteEditorState extends ConsumerState<NoteEditor> {
     } else {
       widget.onBack();
     }
+  }
+
+  /// Show delete confirmation dialog
+  Future<void> _showDeleteConfirmation() async {
+    final result = await showCupertinoDialog<bool>(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('Delete Note'),
+        content: const Text('Are you sure you want to delete this note? This action cannot be undone.'),
+        actions: [
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true && mounted) {
+      try {
+        final repository = ref.read(noteRepositoryProvider);
+        await repository.deleteNote(widget.note.id);
+        if (mounted) {
+          widget.onBack();
+        }
+      } catch (e) {
+        if (mounted) {
+          _showErrorDialog('Failed to delete note. Please try again.');
+        }
+      }
+    }
+  }
+
+  /// Show error dialog
+  void _showErrorDialog(String message) {
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('Error'),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -112,12 +174,21 @@ class _NoteEditorState extends ConsumerState<NoteEditor> {
             size: AppDimensions.iconSizeLarge,
           ),
         ),
-        trailing: _hasUnsavedChanges
+        middle: _hasUnsavedChanges
             ? const Padding(
                 padding: EdgeInsets.only(right: AppDimensions.spacingSmall),
                 child: CupertinoActivityIndicator(),
               )
             : null,
+        trailing: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: _showDeleteConfirmation,
+          child: const Icon(
+            CupertinoIcons.delete,
+            size: AppDimensions.iconSizeLarge,
+            color: CupertinoColors.destructiveRed,
+          ),
+        ),
       ),
       child: SafeArea(
         child: Padding(

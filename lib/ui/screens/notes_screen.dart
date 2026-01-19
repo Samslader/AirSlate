@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/note_provider.dart';
 import '../../data/models/note.dart';
 import '../../core/constants/app_dimensions.dart';
-import '../../core/constants/app_colors.dart';
 import '../widgets/note_card.dart';
 import '../widgets/note_editor.dart';
 
@@ -14,8 +13,10 @@ import '../widgets/note_editor.dart';
 /// - Renders NoteCard for each note
 /// - Floating action button to create new note
 /// - Navigation to NoteEditor when note is tapped
+/// - Animated transitions between list and editor views
+/// - Error handling with user-friendly messages
 /// 
-/// Requirements: 5.1, 5.2, 5.6
+/// Requirements: 5.1, 5.2, 5.6, 6.1, 6.3, 7.3, 7.5
 class NotesScreen extends ConsumerStatefulWidget {
   const NotesScreen({super.key});
 
@@ -26,18 +27,44 @@ class NotesScreen extends ConsumerStatefulWidget {
 class _NotesScreenState extends ConsumerState<NotesScreen> {
   Note? _editingNote;
 
+  /// Show error dialog
+  void _showErrorDialog(String message) {
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('Error'),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Create a new note and open the editor
-  void _createNewNote() {
-    final repository = ref.read(noteRepositoryProvider);
-    final newNote = Note(content: '');
-    
-    // Add note to database
-    repository.addNote(newNote).then((_) {
+  Future<void> _createNewNote() async {
+    try {
+      final repository = ref.read(noteRepositoryProvider);
+      final newNote = Note(content: '');
+      
+      // Add note to database
+      await repository.addNote(newNote);
+      
       // Open editor with the new note
-      setState(() {
-        _editingNote = newNote;
-      });
-    });
+      if (mounted) {
+        setState(() {
+          _editingNote = newNote;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorDialog('Failed to create note. Please try again.');
+      }
+    }
   }
 
   /// Open the editor for an existing note
@@ -56,18 +83,41 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // If editing a note, show the editor
-    if (_editingNote != null) {
-      return NoteEditor(
-        note: _editingNote!,
-        onBack: _closeNoteEditor,
-      );
-    }
+    return AnimatedSwitcher(
+      duration: const Duration(
+        milliseconds: AppDimensions.animationDurationMedium,
+      ),
+      switchInCurve: Curves.easeInOutCubic,
+      switchOutCurve: Curves.easeInOutCubic,
+      transitionBuilder: (Widget child, Animation<double> animation) {
+        // Combine fade and scale animations for smooth transitions
+        return FadeTransition(
+          opacity: animation,
+          child: ScaleTransition(
+            scale: Tween<double>(
+              begin: 0.95,
+              end: 1.0,
+            ).animate(animation),
+            child: child,
+          ),
+        );
+      },
+      child: _editingNote != null
+          ? NoteEditor(
+              key: ValueKey('editor_${_editingNote!.id}'),
+              note: _editingNote!,
+              onBack: _closeNoteEditor,
+            )
+          : _buildNotesList(),
+    );
+  }
 
-    // Otherwise, show the notes list
+  /// Build the notes list view
+  Widget _buildNotesList() {
     final notesAsync = ref.watch(allNotesProvider);
 
     return Stack(
+      key: const ValueKey('notes_list'),
       children: [
         // Notes list
         notesAsync.when(

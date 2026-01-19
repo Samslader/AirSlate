@@ -5,9 +5,9 @@ import '../../core/constants/app_dimensions.dart';
 /// An animated circular checkbox widget with smooth fill animation
 /// 
 /// Provides a smooth transition between checked and unchecked states
-/// using AnimatedContainer for the fill effect.
+/// using AnimatedContainer with spring-based curves for natural motion.
 /// 
-/// Requirements: 4.4, 7.1
+/// Requirements: 4.4, 7.1, 7.4
 class CheckboxAnimation extends StatelessWidget {
   /// Whether the checkbox is currently checked
   final bool isChecked;
@@ -31,7 +31,7 @@ class CheckboxAnimation extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: AppDimensions.animationDurationMedium),
-        curve: Curves.easeInOut,
+        curve: Curves.easeInOutCubic,
         width: size,
         height: size,
         decoration: BoxDecoration(
