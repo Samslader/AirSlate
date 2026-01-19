@@ -49,4 +49,4 @@
 ### Установка
 1. Клонируйте репозиторий:
    ```bash
-   git clone [https://github.com/ВАШ_НИК/AirSlate.git](https://github.com/ВАШ_НИК/AirSlate.git)
+   git clone [https://github.com/samslader/AirSlate.git](https://github.com/samslader/AirSlate.git)
